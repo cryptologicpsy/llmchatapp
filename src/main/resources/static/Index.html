@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <title>JWT Auth with Register & Login</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; max-width: 500px; }
+    input { width: 100%; padding: 8px; margin: 6px 0; box-sizing: border-box; }
+    button { padding: 10px 15px; margin-top: 10px; cursor: pointer; }
+    textarea { width: 100%; margin-top: 10px; resize: vertical; }
+    pre { background: #f4f4f4; padding: 10px; white-space: pre-wrap; word-wrap: break-word; }
+  </style>
+</head>
+<body>
+
+  <h1>JWT Authentication</h1>
+
+  <h2>Register</h2>
+  <input type="text" id="regUsername" placeholder="Username" autocomplete="username" />
+  <input type="password" id="regPassword" placeholder="Password" autocomplete="new-password" />
+  <button id="btnRegister">Register</button>
+
+  <h2>Login</h2>
+  <input type="text" id="logUsername" placeholder="Username" autocomplete="username" />
+  <input type="password" id="logPassword" placeholder="Password" autocomplete="current-password" />
+  <button id="btnLogin">Login</button>
+
+  
+
+  <script>
+    const baseUrl = "http://localhost:7070";  // Το backend σου
+
+    async function register() {
+      const username = document.getElementById("regUsername").value.trim();
+      const password = document.getElementById("regPassword").value;
+
+      if (!username || !password) {
+        alert("Παρακαλώ συμπλήρωσε username και password.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${baseUrl}/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          alert("Η εγγραφή απέτυχε: " + (err.message || response.statusText));
+          return;
+        }
+
+        const data = await response.json();
+        document.getElementById("tokenDisplay").value = data.token || "";
+        localStorage.setItem("jwt", data.token || "");
+        localStorage.setItem("username", username);
+        alert("Εγγραφή επιτυχής!");
+
+        // Redirect μετά την επιτυχή εγγραφή
+        window.location.href = "chatapp.html";
+      } catch (error) {
+        alert("Σφάλμα κατά την εγγραφή: " + error.message);
+      }
+    }
+
+    async function login() {
+      const username = document.getElementById("logUsername").value.trim();
+      const password = document.getElementById("logPassword").value;
+
+      if (!username || !password) {
+        alert("Παρακαλώ συμπλήρωσε username και password.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${baseUrl}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          alert("Η σύνδεση απέτυχε: " + (err.message || response.statusText));
+          return;
+        }
+
+        const data = await response.json();
+        document.getElementById("tokenDisplay").value = data.token || "";
+        localStorage.setItem("jwt", data.token || "");
+        localStorage.setItem("username", username);
+        alert("Σύνδεση επιτυχής!");
+
+        // Redirect μετά την επιτυχή σύνδεση
+        window.location.href = "chatapp.html";
+      } catch (error) {
+        alert("Σφάλμα κατά τη σύνδεση: " + error.message);
+      }
+    }
+
+    async function callProtected() {
+      const token = localStorage.getItem("jwt");
+      if (!token) {
+        alert("Πρέπει πρώτα να συνδεθείς.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${baseUrl}/api/protected`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          document.getElementById("protectedResult").textContent = `Σφάλμα: ${response.status} ${response.statusText}`;
+          return;
+        }
+
+        const data = await response.text();
+        document.getElementById("protectedResult").textContent = data;
+      } catch (error) {
+        document.getElementById("protectedResult").textContent = "Σφάλμα: " + error.message;
+      }
+    }
+
+    document.getElementById("btnRegister").addEventListener("click", register);
+    document.getElementById("btnLogin").addEventListener("click", login);
+    document.getElementById("btnProtected").addEventListener("click", callProtected);
+  </script>
+
+</body>
+</html>
